@@ -1,2 +1,5 @@
-venv
+venv/
 .env
+mlruns/
+mlruns_db/
+mlartifacts/
