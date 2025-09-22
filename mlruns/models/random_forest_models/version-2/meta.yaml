@@ -1,0 +1,18 @@
+aliases: []
+creation_timestamp: 1758490873866
+current_stage: None
+deployment_job_state: null
+description: ''
+last_updated_timestamp: 1758490873866
+metrics: null
+model_id: m-aac86c6999f240c5812d87bf852d6376
+name: random_forest_models
+params: null
+run_id: 78522b41d6d84ed483c0697090aeba8d
+run_link: ''
+source: models:/m-aac86c6999f240c5812d87bf852d6376
+status: READY
+status_message: null
+storage_location: /home/evan-linux/Desktop/Machine Learning/Churn_prediction/data/churn_pred_models/models/m-aac86c6999f240c5812d87bf852d6376/artifacts
+user_id: null
+version: 2

@@ -1,0 +1,18 @@
+aliases: []
+creation_timestamp: 1758490795276
+current_stage: None
+deployment_job_state: null
+description: ''
+last_updated_timestamp: 1758490795276
+metrics: null
+model_id: m-cc6ad3c0041d4160bfafe7b67f8aeb89
+name: decision_tree_models
+params: null
+run_id: c037b68b56354929a29a3457dd8fa4a0
+run_link: ''
+source: models:/m-cc6ad3c0041d4160bfafe7b67f8aeb89
+status: READY
+status_message: null
+storage_location: /home/evan-linux/Desktop/Machine Learning/Churn_prediction/data/churn_pred_models/models/m-cc6ad3c0041d4160bfafe7b67f8aeb89/artifacts
+user_id: null
+version: 2

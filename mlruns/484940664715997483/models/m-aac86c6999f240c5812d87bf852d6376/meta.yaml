@@ -1,0 +1,10 @@
+artifact_location: /home/evan-linux/Desktop/Machine Learning/Churn_prediction/data/churn_pred_models/models/m-aac86c6999f240c5812d87bf852d6376/artifacts
+creation_timestamp: 1758490869774
+experiment_id: '484940664715997483'
+last_updated_timestamp: 1758490873760
+model_id: m-aac86c6999f240c5812d87bf852d6376
+model_type: ''
+name: random_forest_artifact
+source_run_id: 78522b41d6d84ed483c0697090aeba8d
+status: 2
+status_message: null

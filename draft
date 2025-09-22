@@ -1,0 +1,26 @@
+Q1 = df['TotalCharges'].quantile(0.25)
+Q3 = df['TotalCharges'].quantile(0.75)
+IQR = Q3 - Q1
+
+outliers = df[(df['TotalCharges'] < Q1 - 1.5 * IQR) | (df['TotalCharges'] > Q3 + 1.5 * IQR)]
+print(outliers)
+
+
+import mlflow.sklearn
+
+model_uri = f"models:/{model_name}/13"  # version 13
+model = mlflow.sklearn.load_model(model_uri)
+preds = model.predict(X_test)
+
+print(preds)
+
+
+best_value = 0
+best_params = {}
+for trial in study.trials:
+    if trial.values[0] > best_value:
+        best_value = trial.values[0]
+        best_params = trial.params
+
+pprint(best_params)
+print(best_value)

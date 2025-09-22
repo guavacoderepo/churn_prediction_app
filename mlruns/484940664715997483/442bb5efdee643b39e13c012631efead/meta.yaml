@@ -1,0 +1,14 @@
+artifact_uri: /home/evan-linux/Desktop/Machine Learning/Churn_prediction/data/churn_pred_models/442bb5efdee643b39e13c012631efead/artifacts
+end_time: 1758490801782
+entry_point_name: ''
+experiment_id: '484940664715997483'
+lifecycle_stage: active
+run_id: 442bb5efdee643b39e13c012631efead
+run_name: churn_pred
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1758490796564
+status: 3
+tags: []
+user_id: evan-linux
