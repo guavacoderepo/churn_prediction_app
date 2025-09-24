@@ -1,15 +1,18 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Response
 from .schemas.responses import BatchResponse
 from .schemas.predictions import Features, PredictionResult
 from prometheus_fastapi_instrumentator import Instrumentator
-from etl.transform import transform_data
+from .services.etl_pipeline import ETLPipeline
 from typing import List
-
+import pandas as pd
+from config.setting import Settings
 from mlflow.sklearn import load_model
 
 app = FastAPI(title="churn prediction fastapi app", version="1.0")
 
 Instrumentator().instrument(app).expose(app)  # exposes /metrics
+
+settings = Settings() # type: ignore
 
 @app.get("/", status_code=status.HTTP_200_OK)
 def home_route():
@@ -23,11 +26,13 @@ def predict(features: List[Features]):
         # Extract customer IDs
         customer_ids = [f["customerID"] for f in feature_dicts]
 
-        model = load_model("models:/random_forest_models/2")
+        model = load_model(settings.MODEL_URI)
         if model is None:
             raise RuntimeError("Failed to load model from MLflow.")
-
-        df_scaled = transform_data(feature_dicts)
+        
+        etl = ETLPipeline()
+        pred_df = pd.DataFrame(feature_dicts)
+        df_scaled = etl.transform_data(pred_df)
 
         # Model inference
         preds = model.predict(df_scaled)

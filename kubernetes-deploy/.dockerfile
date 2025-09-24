@@ -7,7 +7,8 @@ WORKDIR /app
 
 RUN pip install --upgrade pip
 
-RUN pip install --no-cache-dir mlflow
+RUN RUN apt-get update && apt-get upgrade -y && apt-get clean && \
+    pip install --no-cache-dir mlflow 
 
 COPY mlruns .
 

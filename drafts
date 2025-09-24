@@ -24,3 +24,13 @@ for trial in study.trials:
 
 pprint(best_params)
 print(best_value)
+
+
+import mlflow
+
+mlflow.set_tracking_uri("http://your-tracking-server:5000")
+
+# List all registered models
+models = mlflow.client.MlflowClient().list_registered_models()
+for m in models:
+    print(f"Name: {m.name}, Latest Version: {m.latest_versions[0].version}, Stages: {[v.current_stage for v in m.latest_versions]}")
