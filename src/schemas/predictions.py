@@ -2,12 +2,12 @@ from pydantic import BaseModel
 from typing import Optional
 
 class Features(BaseModel):
-    customerID: Optional[str]
-    gender: str
+    CustomerID: Optional[str]
+    Gender: str
     SeniorCitizen:int
     Partner: str
     Dependents:str
-    tenure: int
+    Tenure: int
     PhoneService: str
     MultipleLines: str
     InternetService: str
