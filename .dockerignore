@@ -1,0 +1,10 @@
+__pycache__
+venv/
+.env
+mlruns_db/
+mlartifacts/
+mlruns/
+runs-file/
+kubernetes-deploy/
+drafts/
+notebooks/

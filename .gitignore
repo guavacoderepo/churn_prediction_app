@@ -4,3 +4,5 @@ venv/
 mlruns_db/
 mlartifacts/
 mlruns/
+kubernetes-deploy/
+drafts/
