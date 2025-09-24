@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: churn-stack
+spec:
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+      - name: mlflow
+        image: evan4110/churnpre-mlflow:1.0
+        ports:
+          - containerPort: 5000
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: http://mlflow-server:5000

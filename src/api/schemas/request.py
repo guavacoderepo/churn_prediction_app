@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from ..schemas.predictions import Features
+from .predictions import Features
 from typing import List
 
 class BatchRequest(BaseModel):

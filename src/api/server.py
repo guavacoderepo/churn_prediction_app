@@ -1,9 +1,8 @@
 from fastapi import FastAPI, HTTPException, status
-from ..api.schemas.responses import BatchResponse
-from ..api.schemas.request import BatchRequest
-from ..api.schemas.predictions import Features, PredictionResult
+from .schemas.responses import BatchResponse
+from .schemas.predictions import Features, PredictionResult
 from prometheus_fastapi_instrumentator import Instrumentator
-from ..etl.transform import transform_data
+from etl.transform import transform_data
 from typing import List
 
 from mlflow.sklearn import load_model
