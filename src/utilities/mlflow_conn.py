@@ -6,24 +6,28 @@ def mlflow_connect():
     """Connect to MLflow, create experiment if missing, and return experiment ID."""
     try:
         settings = Settings()  # type: ignore
-        dagshub.init(repo_owner='guavacoderepo', repo_name='churn_prediction_app', mlflow=True) # type: ignore
+        tracking_uri = settings.TRACKING_URI
+        experiment_name = settings.EXPERIMENT_NAME
+        repo_name = settings.REPO_NAME
+        repo_ower = settings.REPO_OWNER
 
-        mlflow.set_tracking_uri(settings.TRACKING_URI)
-        exp = mlflow.get_experiment_by_name(settings.EXPERIMENT_NAME) # type: ignore
+        dagshub.init(repo_owner=repo_ower, repo_name=repo_name, mlflow=True) # type: ignore
+        mlflow.set_tracking_uri(tracking_uri)
+        exp = mlflow.get_experiment_by_name(experiment_name) # type: ignore
 
         if exp is None:
             mlflow.create_experiment(
-                name=settings.EXPERIMENT_NAME,
+                name= experiment_name,
                 tags={
                     "mlflow.note.content": "Customer churn prediction pipeline",
                     "team": "AI engineering team",
                     "project": "churn_prediction_end_to_end"
-                },
-                artifact_location="src/data/churn_pred_models"
+                }
             )
+            exp = mlflow.get_experiment_by_name(experiment_name)
+            print("✅ Created new experiment:", exp.experiment_id) # type: ignore
         if exp is None:
             raise RuntimeError("❌ Failed to create or fetch MLflow experiment.")
-
         return exp.experiment_id # type: ignore
 
     except Exception as e:

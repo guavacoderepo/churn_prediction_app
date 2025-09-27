@@ -1,15 +1,18 @@
 from fastapi import HTTPException
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from typing import Optional
+from typing import Optional, Union
+from pandas import DataFrame
 import pandas as pd
 import joblib
 
 
+pd.set_option('future.no_silent_downcasting', True)
+
 class ETLPipeline:
     """ETL pipeline to extract, transform, and scale customer churn data."""
 
-    def __init__(self, source: str = "dataset/Customer-churn-datase.csv") -> None:
+    def __init__(self, source: Union[str, DataFrame] = "dataset/Customer-churn-datase.csv") -> None:
         self.scaler: Optional[StandardScaler] = None
         self.source = source
     
@@ -26,6 +29,8 @@ class ETLPipeline:
         Connect to a database base to retrieve recent data eg. redis, SQL, NOSQL or Kafka for streaming
         """
         try:
+            if isinstance(self.source, DataFrame):
+                return self.source
             return pd.read_csv(self.source)
         except Exception as e:
             raise Exception(f"Data extraction error: {e}")
@@ -55,7 +60,7 @@ class ETLPipeline:
 
             # Group mapping
             group_cols = ["OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies"]
-            df[group_cols] = df[group_cols].replace({'No': 0, 'Yes': 1, 'No internet service': 3})
+            df[group_cols] = df[group_cols].replace({'No': 0, 'Yes': 1, 'No internet service': 3}).infer_objects(copy=False)
 
             # Gender mapping
             df["gender"] = df["gender"].replace({"Male": 1, "Female": 0})
@@ -74,12 +79,15 @@ class ETLPipeline:
                 'Credit card (automatic)': 4
             })
 
+             # Separate target
             if "Churn" in df.columns:
                 df["Churn"] = df["Churn"].replace({"Yes": 1, "No": 0})
-
-            X = df.drop(columns="Churn", axis=1)
-            y = df[["Churn"]]
-
+                y = df[["Churn"]]
+                X = df.drop(columns="Churn")
+            else:
+                y = None
+                X = df
+            
             # Scale data
             X_scaled = self.scaler.transform(X) # type: ignore
             return X_scaled, y

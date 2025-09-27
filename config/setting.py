@@ -11,8 +11,9 @@ class Settings(BaseSettings):
     RUN_NAME:str
     EXPERIMENT_NAME:str
     AIRFLOW_UID: str
-    MODEL_URI:str
     MODEL_NAME:str
     DAGSHUB_TOKEN:str
+    REPO_NAME:str
+    REPO_OWNER:str
 
     env: str = "development"

@@ -2,7 +2,7 @@ import mlflow
 import numpy as np
 from typing import Dict, Any
 from mlflow import sklearn
-from utilities.mlflow_conn import mlflow_connect
+from src.utilities.mlflow_conn import mlflow_connect
 from sklearn.ensemble import RandomForestClassifier
 from mlflow.models import infer_signature
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
@@ -26,13 +26,18 @@ class ModelingPipeline:
     def train_model(self, params:Dict) -> RandomForestClassifier:
         """Train RandomForestClassifier on training data if not already trained."""
         X_train, _, y_train, _ = self._unpack_data()
+        y_train = np.ravel(y_train).astype(int)
+        
         if self.model is None:
-            self.model = RandomForestClassifier(**params, n_jobs=-1).fit(X_train, y_train)
-        return self.model
+            self.model = RandomForestClassifier(**params, n_jobs=-1).fit(X_train, y_train.ravel())
+            print(self.model)
+        return self.model # type: ignore
 
     def evaluate_model(self, model: RandomForestClassifier) -> dict:
         """Predict on test data and return accuracy, f1, recall, and precision."""
         _, X_test, _, y_test = self._unpack_data()
+        y_test = np.ravel(y_test).astype(int)
+
         pred = model.predict(X_test)
         return {
             "accuracy": accuracy_score(y_test, pred),
