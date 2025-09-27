@@ -1,3 +1,4 @@
+import os
 import dagshub
 import mlflow
 from config.setting import Settings
@@ -10,6 +11,11 @@ def mlflow_connect():
         experiment_name = settings.EXPERIMENT_NAME
         repo_name = settings.REPO_NAME
         repo_ower = settings.REPO_OWNER
+        token = settings.DAGSHUB_TOKEN
+        
+        os.environ['MLFLOW_TRACKING_URI'] = tracking_uri
+        os.environ['MLFLOW_TRACKING_USERNAME'] = repo_ower
+        os.environ['MLFLOW_TRACKING_PASSWORD'] = token
 
         dagshub.init(repo_owner=repo_ower, repo_name=repo_name, mlflow=True) # type: ignore
         mlflow.set_tracking_uri(tracking_uri)

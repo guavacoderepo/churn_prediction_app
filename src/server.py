@@ -48,7 +48,6 @@ def predict(features: List[Features]):
         if model is None:
             raise RuntimeError("Failed to load model from MLflow.")
         
-        
         pred_df = pd.DataFrame(feature_dicts)
         etl = ETLPipeline(source=pred_df)
         df_scaled,_ = etl.transform_data()
