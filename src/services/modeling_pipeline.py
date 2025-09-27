@@ -1,43 +1,38 @@
 import mlflow
+import numpy as np
+from typing import Dict, Any
 from mlflow import sklearn
-from ...config.setting import Settings
-from .etl_pipeline import ETLPipeline
+from utilities.mlflow_conn import mlflow_connect
 from sklearn.ensemble import RandomForestClassifier
 from mlflow.models import infer_signature
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
-settings = Settings() # type: ignore
-
 class ModelingPipeline:
     """Train, evaluate, and log RandomForest model for churn prediction."""
 
-    def __init__(self, params: dict = {}) -> None:
+    def __init__(self, data: Any) -> None:
         """Initialize class, load data, and set hyperparameters."""
-        self.data = ETLPipeline()
-        self.params = params or self.default_params()
+        self.data = data
         self.model = None
+    
+    def _unpack_data(self):
+        """Safely unpack dataset into train/test splits."""
+        try:
+            X_train, X_test, y_train, y_test = self.data
+        except Exception as e:
+            raise ValueError("❌ Data must be a tuple: (X_train, X_test, y_train, y_test)") from e
+        return X_train, X_test, y_train, y_test
 
-    def default_params(self) -> dict:
-        """Return default hyperparameters for RandomForestClassifier."""
-        return {
-            "n_estimators": 50,
-            "criterion": "gini",
-            "random_state": 42,
-            "max_depth": 10,
-            "class_weight": "balanced_subsample"
-        }
-
-    def train_model(self) -> RandomForestClassifier:
+    def train_model(self, params:Dict) -> RandomForestClassifier:
         """Train RandomForestClassifier on training data if not already trained."""
-        X_train, y_train, _, _ = self.data.transform_data()
+        X_train, _, y_train, _ = self._unpack_data()
         if self.model is None:
-            self.model = RandomForestClassifier(**self.params, n_jobs=-1).fit(X_train, y_train)
+            self.model = RandomForestClassifier(**params, n_jobs=-1).fit(X_train, y_train)
         return self.model
 
-    def evaluate_model(self) -> dict:
+    def evaluate_model(self, model: RandomForestClassifier) -> dict:
         """Predict on test data and return accuracy, f1, recall, and precision."""
-        _, _, X_test, y_test = self.data.transform_data()
-        model = self.train_model()
+        _, X_test, _, y_test = self._unpack_data()
         pred = model.predict(X_test)
         return {
             "accuracy": accuracy_score(y_test, pred),
@@ -46,34 +41,23 @@ class ModelingPipeline:
             "precision": precision_score(y_test, pred)
         }
 
-    def mlflow_connect(self) -> str:
-        """Connect to MLflow, create experiment if missing, and return experiment ID."""
-        mlflow.set_tracking_uri(settings.TRACKING_URI)
-        exp = mlflow.get_experiment_by_name(settings.EXPERIMENT_NAME)
-        if exp is None:
-            mlflow.create_experiment(
-                name=settings.EXPERIMENT_NAME,
-                tags={
-                    "mlflow.note.content": "Customer churn prediction pipeline",
-                    "team": "AI engineering team",
-                    "project": "churn_prediction_end_to_end"
-                },
-                artifact_location="src/data/churn_pred_models"
-            )
-            exp = mlflow.get_experiment_by_name(settings.EXPERIMENT_NAME)
-        return exp.experiment_id # type: ignore
-
-    def log_to_mlflow(self, model_name: str, run_name: str):
+    def log_to_mlflow(
+            self,
+            sk_model: RandomForestClassifier,
+            model_name: str,
+            params: Dict,
+            run_name: str
+        ):
         """Log model, hyperparameters, metrics, and tags to MLflow."""
-        experiment_id = self.mlflow_connect()
-        sk_model = self.train_model()
-        _, _, X_test, _ = self.data.transform_data()
+        experiment_id = mlflow_connect()
+        X_train, X_test, _, _ = self._unpack_data()
 
         with mlflow.start_run(run_name=run_name, experiment_id=experiment_id):
-            for key, val in self.params.items():
+            for key, val in params.items():
                 mlflow.log_param(key, val)
 
-            for key, val in self.evaluate_model().items():
+            eval_metrics = self.evaluate_model(sk_model)
+            for key, val in eval_metrics.items():
                 mlflow.log_metric(key, val)
 
             for key, val in {
@@ -84,10 +68,10 @@ class ModelingPipeline:
 
             sklearn.log_model(
                 sk_model=sk_model,
-                input_example=X_test[:5],
+                input_example=X_train[:5],
                 registered_model_name=f"{model_name}_models",
                 signature=infer_signature(X_test[:5], sk_model.predict(X_test[:5])),
-                name=f"{model_name}_artifact"
+                artifact_path=f"{model_name}_artifact"
             )
 
         print(f"✅ Done logging {model_name}")

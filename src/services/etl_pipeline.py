@@ -1,4 +1,7 @@
 from fastapi import HTTPException
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from typing import Optional
 import pandas as pd
 import joblib
 
@@ -6,16 +9,26 @@ import joblib
 class ETLPipeline:
     """ETL pipeline to extract, transform, and scale customer churn data."""
 
-    def __init__(self, source: str = "../../dataset/Customer-churn-datase.csv") -> None:
-        self.scaler = joblib.load("data/scaler.save")
+    def __init__(self, source: str = "dataset/Customer-churn-datase.csv") -> None:
+        self.scaler: Optional[StandardScaler] = None
         self.source = source
+    
+    def load_scaler(self):
+        if self.scaler is None:
+            try:
+                self.scaler = joblib.load("src/data/scaler.save")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Scaler load error: {e}")
 
     def extract_data(self) -> pd.DataFrame:
-        """Read historical data from CSV."""
+        """
+        Read historical data from CSV.
+        Connect to a database base to retrieve recent data eg. redis, SQL, NOSQL or Kafka for streaming
+        """
         try:
             return pd.read_csv(self.source)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Data extraction error: {e}")
+            raise Exception(f"Data extraction error: {e}")
 
     def transform_data(self, data: pd.DataFrame | None = None):
         """
@@ -23,7 +36,12 @@ class ETLPipeline:
         If no data provided, extract from source.
         """
         try:
+            if self.scaler is None:
+                self.load_scaler()
+
             df = data if isinstance(data, pd.DataFrame) else self.extract_data()
+
+            df.TotalCharges = pd.to_numeric(df.TotalCharges, errors='coerce')
 
             # Drop duplicates, missing values, and unnecessary column
             df = df.drop_duplicates(keep="first").drop(columns="customerID", axis=1).dropna(axis=0)
@@ -56,8 +74,21 @@ class ETLPipeline:
                 'Credit card (automatic)': 4
             })
 
-            # Scale data
-            return self.scaler.transform(df)
+            if "Churn" in df.columns:
+                df["Churn"] = df["Churn"].replace({"Yes": 1, "No": 0})
 
+            X = df.drop(columns="Churn", axis=1)
+            y = df[["Churn"]]
+
+            # Scale data
+            X_scaled = self.scaler.transform(X) # type: ignore
+            return X_scaled, y
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Data transformation error: {e}")
+            raise Exception(f"Data transformation error: {e}")
+
+    def tranform_split_data(self):
+        X, y = self.transform_data()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        return X_train, X_test, y_train, y_test
+
+

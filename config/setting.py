@@ -8,9 +8,11 @@ class Settings(BaseSettings):
     )
 
     TRACKING_URI: str
-    RUN_ID:str
+    RUN_NAME:str
     EXPERIMENT_NAME:str
-    SECRET_KEY: str
-    DB_PATH: str
+    AIRFLOW_UID: str
     MODEL_URI:str
+    MODEL_NAME:str
+    DAGSHUB_TOKEN:str
+
     env: str = "development"

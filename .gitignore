@@ -5,3 +5,5 @@ mlruns_db/
 mlartifacts/
 mlruns/
 drafts/
+logs/
+plugins/

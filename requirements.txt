@@ -12,3 +12,4 @@ mlflow
 prometheus-fastapi-instrumentator
 pyarrow
 python-dotenv
+apache-airflow==3.0.6
