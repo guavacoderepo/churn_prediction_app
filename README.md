@@ -2,7 +2,6 @@
 
 **A FastAPI-based microservice for predicting customer churn using machine learning, integrated with Redis, MLflow, Prometheus, and Grafana for monitoring.**
 
-
 ---
 
 ## Project Overview

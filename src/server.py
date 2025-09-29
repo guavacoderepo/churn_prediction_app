@@ -26,10 +26,10 @@ async def lifespan(app: FastAPI):
     - Connect to Redis
     """
     model_name = settings.MODEL_NAME
-    alias = "champion"
-    REDIS_URL = "redis://localhost:6379"
+    alias = settings.ALIAS
+    redis_url = settings.REDIS_URL
 
-    r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+    r = redis.Redis.from_url(redis_url, decode_responses=True)
     model_uri = f"models:/{model_name}_models@{alias}"
 
     # Connect to MLflow / DagsHub
@@ -63,22 +63,26 @@ async def update_metrics():
     runs = mlflow.search_runs(experiment_ids=[experiment_id])
     counter = 0
 
-    for _, run in runs.iterrows():  # type: ignore
-        if run.get("tags.model_name") == settings.MODEL_NAME:
-            run_id = run.get("run_id")
-            model_name = run.get("tags.model_name")
-            accuracy = run.get("metrics.accuracy")
-            precision = run.get("metrics.precision")
-            f1_score = run.get("metrics.f1_score")
-            recall = run.get("metrics.recall")
+    try:
+        for _, run in runs.iterrows():  # type: ignore
+            if run.get("tags.model_name") == settings.MODEL_NAME:
+                print(run)
+                run_id = run.get("run_id", "Default")
+                model_name = run.get("tags.model_name", 0)
+                accuracy = run.get("metrics.accuracy", 0)
+                precision = run.get("metrics.precision", 0)
+                f1_score = run.get("metrics.f1", 0)
+                recall = run.get("metrics.recall", 0)
 
-            accuracy_gauge.labels(run_id=run_id, model_name=model_name).set(accuracy)  # type: ignore
-            precision_gauge.labels(run_id=run_id, model_name=model_name).set(precision)  # type: ignore
-            f1_gauge.labels(run_id=run_id, model_name=model_name).set(f1_score)  # type: ignore
-            recall_gauge.labels(run_id=run_id, model_name=model_name).set(recall)  # type: ignore
-            counter += 1
+                accuracy_gauge.labels(run_id=run_id, model_name=model_name).set(accuracy) 
+                precision_gauge.labels(run_id=run_id, model_name=model_name).set(precision) 
+                f1_gauge.labels(run_id=run_id, model_name=model_name).set(f1_score)
+                recall_gauge.labels(run_id=run_id, model_name=model_name).set(recall)
+                counter += 1
 
-    model_gauge.set(counter)
+        model_gauge.set(counter)
+    except:
+        pass
 
 
 @app.get("/metrics")
