@@ -1,73 +1,178 @@
+import redis.asyncio as redis
 from fastapi import FastAPI, HTTPException, status, Response
+from typing import List
+
+import pandas as pd
+import mlflow
+from contextlib import asynccontextmanager
+from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
+from prometheus_fastapi_instrumentator import Instrumentator
+
+from config.setting import Settings
+from .services.modelingService import ModelingPipeline
+from .services.etlService import ETLPipeline
+from .services.redisService import RedisHelper
 from .schemas.responses import BatchResponse
 from .schemas.predictions import Features, PredictionResult
-from prometheus_fastapi_instrumentator import Instrumentator
-from .services.etl_pipeline import ETLPipeline
-from typing import List
-import pandas as pd
-from config.setting import Settings
-import mlflow 
 from .utilities.mlflow_conn import mlflow_connect
-from contextlib import asynccontextmanager
 
-
-settings = Settings() # type: ignore
-model = None
+settings = Settings()  # type: ignore
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Async lifespan to initialize the app:
+    - Load MLflow model
+    - Connect to Redis
+    """
     model_name = settings.MODEL_NAME
     alias = "champion"
+    REDIS_URL = "redis://localhost:6379"
+
+    r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
     model_uri = f"models:/{model_name}_models@{alias}"
 
     # Connect to MLflow / DagsHub
     exp_id = mlflow_connect()
-    model = mlflow.sklearn.load_model(model_uri) # type: ignore
-    app.state.model = model  # store in app state
-    app.state.exp_id = exp_id
-    
-    print("✅ Model loaded successfully!")
-    yield  # important! signals app startup
+    model = mlflow.sklearn.load_model(model_uri)  # type: ignore
 
-app = FastAPI(title="churn prediction fastapi app", version="1.0", lifespan=lifespan)
-Instrumentator().instrument(app).expose(app)  # exposes /metrics
+    # Store in app state
+    app.state.model = model
+    app.state.exp_id = exp_id
+    app.state.redis = r
+
+    print("✅ Model loaded successfully!")
+    yield
+
+
+# Initialize FastAPI app
+app = FastAPI(title="Churn Prediction API", version="1.0", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app)
+
+# Prometheus metrics
+accuracy_gauge = Gauge("mlflow_model_accuracy", "Accuracy per run", ["run_id", "model_name"])
+precision_gauge = Gauge("mlflow_model_precision", "Precision per run", ["run_id", "model_name"])
+f1_gauge = Gauge("mlflow_model_f1", "F1 Score per run", ["run_id", "model_name"])
+recall_gauge = Gauge("mlflow_model_recall", "Recall per run", ["run_id", "model_name"])
+model_gauge = Gauge("mlflow_model_count", "Total registered models")
+
+
+async def update_metrics():
+    """Fetch MLflow metrics and update Prometheus gauges"""
+    experiment_id = app.state.exp_id
+    runs = mlflow.search_runs(experiment_ids=[experiment_id])
+    counter = 0
+
+    for _, run in runs.iterrows():  # type: ignore
+        if run.get("tags.model_name") == settings.MODEL_NAME:
+            run_id = run.get("run_id")
+            model_name = run.get("tags.model_name")
+            accuracy = run.get("metrics.accuracy")
+            precision = run.get("metrics.precision")
+            f1_score = run.get("metrics.f1_score")
+            recall = run.get("metrics.recall")
+
+            accuracy_gauge.labels(run_id=run_id, model_name=model_name).set(accuracy)  # type: ignore
+            precision_gauge.labels(run_id=run_id, model_name=model_name).set(precision)  # type: ignore
+            f1_gauge.labels(run_id=run_id, model_name=model_name).set(f1_score)  # type: ignore
+            recall_gauge.labels(run_id=run_id, model_name=model_name).set(recall)  # type: ignore
+            counter += 1
+
+    model_gauge.set(counter)
+
+
+@app.get("/metrics")
+async def metrics():
+    """Expose Prometheus metrics"""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 @app.get("/", status_code=status.HTTP_200_OK)
 def home_route():
-    return "hello world"
+    """Welcome message for the API root"""
+    return {
+        "message": "🎉 Welcome to the Churn Prediction API! "
+                   "Use /predict to get predictions and /train_model to retrain the model."
+    }
+
 
 @app.post("/predict", response_model=BatchResponse, status_code=status.HTTP_200_OK)
-def predict(features: List[Features]):
+async def predict(features: List[Features]):
+    """
+    Perform churn prediction for a batch of features.
+    Saves predictions to Redis and returns results.
+    """
     try:
-        # Convert Pydantic model to dict
         feature_dicts = [f.model_dump(mode="json") for f in features]
-        # Extract customer IDs
         customer_ids = [f["customerID"] for f in feature_dicts]
 
-        model = app.state.model  # fetch model from state
+        model = app.state.model
         if model is None:
-            raise RuntimeError("Failed to load model from MLflow.")
-        
+            raise RuntimeError("Failed to load MLflow model.")
+
         pred_df = pd.DataFrame(feature_dicts)
         etl = ETLPipeline(source=pred_df)
-        df_scaled,_ = etl.transform_data()
+        df_scaled, _ = etl.transform_data()
 
-        # Model inference
         preds = model.predict(df_scaled)
         probs = model.predict_proba(df_scaled)
+        preds_str = ["Yes" if p == 1 else "No" for p in preds]
 
-        # Build response list
+        r = app.state.redis
+        await RedisHelper(conn=r).save_data(feature_dicts, preds_str)
+
         results = [
             PredictionResult(
                 customerID=cust_id,
-                churn_score=round(prob[pred]*100, 2),
-                churn= "Yes" if pred == 1 else "No"
+                churn_score=round(prob[pred] * 100, 2),
+                churn="Yes" if pred == 1 else "No"
             )
             for cust_id, prob, pred in zip(customer_ids, probs, preds)
         ]
         return BatchResponse(result=results)
 
     except Exception as e:
-        # Catch-all for unexpected errors
         raise HTTPException(status_code=500, detail=f"Error predicting churn: {str(e)}")
 
+
+@app.get("/train_model")
+async def train_model():
+    """
+    Retrain the ML model using data from Redis + historical data.
+    Updates MLflow metrics and clears Redis.
+    """
+    try:
+        r = app.state.redis
+        etl = ETLPipeline()
+
+        # Retrieve new training data
+        json_data = await RedisHelper(conn=r).retrieve_data()
+        new_df = pd.DataFrame(json_data)
+        old_df = etl.extract_data()
+
+        # Combine datasets
+        df = pd.concat([new_df, old_df], ignore_index=True)
+        X_train, X_test, y_train, y_test = etl.tranform_split_data(df)
+        y_train, y_test = y_train.values.ravel(), y_test.values.ravel()
+
+        # Model training parameters
+        params = {
+            "max_depth": 17, "n_estimators": 285, "min_samples_leaf": 1,
+            "min_samples_split": 2, "criterion": "gini"
+        }
+
+        # Train and log model
+        modelling = ModelingPipeline((X_train, X_test, y_train, y_test))
+        model = modelling.train_model(params=params)
+        modelling.log_to_mlflow(model, settings.MODEL_NAME, params, settings.RUN_NAME)
+
+        # Update Prometheus metrics
+        await update_metrics()
+
+        # Clear Redis
+        await RedisHelper(conn=r).clear_data()
+
+        return {"message": "✅ Model retraining and logging complete."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during model training: {str(e)}")

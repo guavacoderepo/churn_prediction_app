@@ -94,8 +94,8 @@ class ETLPipeline:
         except Exception as e:
             raise Exception(f"Data transformation error: {e}")
 
-    def tranform_split_data(self):
-        X, y = self.transform_data()
+    def tranform_split_data(self, data: pd.DataFrame | None = None):
+        X, y = self.transform_data(data)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         return X_train, X_test, y_train, y_test
 

@@ -2,8 +2,8 @@ import os
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import mlflow
-from src.services.etl_pipeline import ETLPipeline
-from src.services.modeling_pipeline import ModelingPipeline
+from services.etlService import ETLPipeline
+from services.modelingService import ModelingPipeline
 from src.utilities.mlflow_conn import mlflow_connect
 from config.setting import Settings
 from typing import Any
@@ -20,7 +20,7 @@ def load_models():
     runs_info = []
     settings = Settings()  # type: ignore
     experiment_id = mlflow_connect()
-
+    
     runs = mlflow.search_runs(experiment_ids=[experiment_id]) 
     for _, run in runs.iterrows():  # type: ignore
         if run.get('tags.model_name') == settings.MODEL_NAME:
@@ -58,14 +58,13 @@ def modelling_task(path):
     except Exception as e:
         raise Exception(f"Error occured training model: {e}") from e
 
-# def mflow_log():
-#     """Execute ETL, train model, and log to MLflow."""
-#     data = etl_pipeline()
-#     sk_model, params, eval = modelling_task(data)
-#     run_name = settings.RUN_NAME
-#     model_name = settings.MODEL_NAME
-#     # log_to_mlflow(sk_model, model_name, params, run_name)
+def mlflow_log():
+    """Execute ETL, train model, and log to MLflow."""
+    models = load_models()
+    print(models)
 
-data_path = etl_task()
+# data_path = etl_task()
 
-model = modelling_task(data_path)
+# model = modelling_task(data_path)
+
+mlflow_log()

@@ -15,5 +15,8 @@ class Settings(BaseSettings):
     DAGSHUB_TOKEN:str
     REPO_NAME:str
     REPO_OWNER:str
+    REDIS_KEY:str
+    REDIS_URL:str
+    ALIAS:str
 
     env: str = "development"
