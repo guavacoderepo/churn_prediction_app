@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     TRACKING_URI: str
     RUN_NAME:str
     EXPERIMENT_NAME:str
-    AIRFLOW_UID: str
     MODEL_NAME:str
     DAGSHUB_TOKEN:str
     REPO_NAME:str

@@ -15,10 +15,30 @@ spec:
     spec:
       containers:
       - name: fastapi
-        image: evan4110/churnpredapp:1.0
+        image: evan4110/churn-api:latest
         ports:
         - containerPort: 8000
           name: web
         env:
         - name: ENVIRONMENT
           value: production
+        - name: TRACKING_URI
+          value: "https://dagshub.com/guavacoderepo/churn_prediction_app.mlflow"
+        - name: RUN_NAME
+          value: "churn_pred_run"
+        - name: EXPERIMENT_NAME
+          value: "churn_prediction_exp"
+        - name: REPO_NAME
+          value: "churn_prediction_app"
+        - name: REPO_OWNER
+          value: "guavacoderepo"
+        - name: MODEL_NAME
+          value: "random_forest"
+        - name: DAGSHUB_TOKEN
+          value: "6ca38ef3384227afcc543c1f08c6cad0ff5bdb8d"
+        - name: REDIS_KEY
+          value: "redisKey"
+        - name: REDIS_URL
+          value: "redis:6379"
+        - name: ALIAS
+          value: "champion"

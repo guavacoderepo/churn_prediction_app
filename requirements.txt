@@ -12,3 +12,5 @@ mlflow
 prometheus-fastapi-instrumentator
 pyarrow
 python-dotenv
+redis
+dagshub

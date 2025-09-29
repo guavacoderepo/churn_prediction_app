@@ -11,7 +11,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from config.setting import Settings
 from .services.modelingService import ModelingPipeline
 from .services.etlService import ETLPipeline
-from .services.redisService import RedisHelper
+from .utilities.redis_helpers import RedisHelper
 from .schemas.responses import BatchResponse
 from .schemas.predictions import Features, PredictionResult
 from .utilities.mlflow_conn import mlflow_connect
@@ -27,19 +27,24 @@ async def lifespan(app: FastAPI):
     """
     model_name = settings.MODEL_NAME
     alias = settings.ALIAS
-    redis_url = settings.REDIS_URL
+    redis_url = f"redis://{settings.REDIS_URL}"
 
-    r = redis.Redis.from_url(redis_url, decode_responses=True)
-    model_uri = f"models:/{model_name}_models@{alias}"
+    r = await redis.Redis.from_url(redis_url, decode_responses=True)
+    pong = await r.ping()
+    print(f"Redis status - > {redis_url}:", "Connected" if pong else "Not connected")
 
     # Connect to MLflow / DagsHub
     exp_id = mlflow_connect()
+    model_uri = f"models:/{model_name}_models@{alias}"
     model = mlflow.sklearn.load_model(model_uri)  # type: ignore
 
     # Store in app state
     app.state.model = model
     app.state.exp_id = exp_id
     app.state.redis = r
+
+    # Update Prometheus metrics
+    await update_metrics()
 
     print("✅ Model loaded successfully!")
     yield
@@ -50,10 +55,10 @@ app = FastAPI(title="Churn Prediction API", version="1.0", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app)
 
 # Prometheus metrics
-accuracy_gauge = Gauge("mlflow_model_accuracy", "Accuracy per run", ["run_id", "model_name"])
-precision_gauge = Gauge("mlflow_model_precision", "Precision per run", ["run_id", "model_name"])
-f1_gauge = Gauge("mlflow_model_f1", "F1 Score per run", ["run_id", "model_name"])
-recall_gauge = Gauge("mlflow_model_recall", "Recall per run", ["run_id", "model_name"])
+accuracy_gauge = Gauge("mlflow_model_accuracy", "Accuracy per run", ["model_name"])
+precision_gauge = Gauge("mlflow_model_precision", "Precision per run", ["model_name"])
+f1_gauge = Gauge("mlflow_model_f1", "F1 Score per run", ["model_name"])
+recall_gauge = Gauge("mlflow_model_recall", "Recall per run", ["model_name"])
 model_gauge = Gauge("mlflow_model_count", "Total registered models")
 
 
@@ -66,7 +71,6 @@ async def update_metrics():
     try:
         for _, run in runs.iterrows():  # type: ignore
             if run.get("tags.model_name") == settings.MODEL_NAME:
-                print(run)
                 run_id = run.get("run_id", "Default")
                 model_name = run.get("tags.model_name", 0)
                 accuracy = run.get("metrics.accuracy", 0)
@@ -74,10 +78,10 @@ async def update_metrics():
                 f1_score = run.get("metrics.f1", 0)
                 recall = run.get("metrics.recall", 0)
 
-                accuracy_gauge.labels(run_id=run_id, model_name=model_name).set(accuracy) 
-                precision_gauge.labels(run_id=run_id, model_name=model_name).set(precision) 
-                f1_gauge.labels(run_id=run_id, model_name=model_name).set(f1_score)
-                recall_gauge.labels(run_id=run_id, model_name=model_name).set(recall)
+                accuracy_gauge.labels(model_name=model_name).set(accuracy) 
+                precision_gauge.labels(model_name=model_name).set(precision) 
+                f1_gauge.labels(model_name=model_name).set(f1_score)
+                recall_gauge.labels(model_name=model_name).set(recall)
                 counter += 1
 
         model_gauge.set(counter)

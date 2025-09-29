@@ -9,3 +9,7 @@ kubernetes-deploy/
 drafts/
 notebooks/
 dagshuh_config.sh
+k8s/
+dagshuh_config.sh
+docker-compose.yml
+run_pipeline.py
