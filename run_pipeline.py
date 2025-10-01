@@ -51,7 +51,7 @@ def modelling_task(path):
         params = {'max_depth': 17, 'n_estimators': 285, 'min_samples_leaf': 1, 
                 'min_samples_split': 2, 'criterion': 'gini'}
 
-        modelling = ModelingPipeline((X_train, X_test, y_train, y_test))
+        modelling = ModelingPipeline((X_train, X_test, y_train, y_test),"")
         model = modelling.train_model(params=params)
         eval = modelling.evaluate_model(model=model)
         return model, params, eval

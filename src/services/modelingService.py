@@ -2,7 +2,6 @@ import mlflow
 import numpy as np
 from typing import Dict, Any
 from mlflow import sklearn
-from src.utilities.mlflow_conn import mlflow_connect
 from sklearn.ensemble import RandomForestClassifier
 from mlflow.models import infer_signature
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
@@ -10,10 +9,11 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 class ModelingPipeline:
     """Train, evaluate, and log RandomForest model for churn prediction."""
 
-    def __init__(self, data: Any) -> None:
+    def __init__(self, data: Any, exp_id:str) -> None:
         """Initialize class, load data, and set hyperparameters."""
         self.data = data
         self.model = None
+        self.exp_id = exp_id
     
     def _unpack_data(self):
         """Safely unpack dataset into train/test splits."""
@@ -54,9 +54,9 @@ class ModelingPipeline:
             run_name: str
         ):
         """Log model, hyperparameters, metrics, and tags to MLflow."""
-        experiment_id = mlflow_connect()
         X_train, X_test, _, _ = self._unpack_data()
-
+        
+        experiment_id = self.exp_id
         with mlflow.start_run(run_name=run_name, experiment_id=experiment_id):
             for key, val in params.items():
                 mlflow.log_param(key, val)

@@ -1,6 +1,10 @@
+pydantic==2.11.9
+pydantic-settings==2.10.1
+prometheus-fastapi-instrumentator==7.1.0
+prometheus_client==0.23.1
+mlflow==2.22.2
 fastapi
 uvicorn
-pydantic
 numpy
 pandas
 scikit-learn
@@ -8,7 +12,6 @@ joblib
 matplotlib
 seaborn
 optuna
-mlflow
 prometheus-fastapi-instrumentator
 pyarrow
 python-dotenv

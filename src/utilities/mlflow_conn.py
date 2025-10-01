@@ -16,7 +16,7 @@ def mlflow_connect():
         dagshub.auth.add_app_token(token)  # type: ignore
         
         dagshub.init(repo_owner=repo_ower, repo_name=repo_name, mlflow=True) # type: ignore
-        mlflow.set_tracking_uri(f"https://{tracking_uri}")
+        mlflow.set_tracking_uri(tracking_uri)
         exp = mlflow.get_experiment_by_name(experiment_name) # type: ignore
 
         if exp is None:

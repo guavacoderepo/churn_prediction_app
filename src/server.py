@@ -55,10 +55,10 @@ app = FastAPI(title="Churn Prediction API", version="1.0", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app)
 
 # Prometheus metrics
-accuracy_gauge = Gauge("mlflow_model_accuracy", "Accuracy per run", ["model_name"])
-precision_gauge = Gauge("mlflow_model_precision", "Precision per run", ["model_name"])
-f1_gauge = Gauge("mlflow_model_f1", "F1 Score per run", ["model_name"])
-recall_gauge = Gauge("mlflow_model_recall", "Recall per run", ["model_name"])
+accuracy_gauge = Gauge("mlflow_model_accuracy", "Accuracy per run", ["model_name", "pos"])
+precision_gauge = Gauge("mlflow_model_precision", "Precision per run", ["model_name", "pos"])
+f1_gauge = Gauge("mlflow_model_f1", "F1 Score per run", ["model_name", "pos"])
+recall_gauge = Gauge("mlflow_model_recall", "Recall per run", ["model_name", "pos"])
 model_gauge = Gauge("mlflow_model_count", "Total registered models")
 
 
@@ -68,22 +68,28 @@ async def update_metrics():
     runs = mlflow.search_runs(experiment_ids=[experiment_id])
     counter = 0
 
+    # clear existing metrics before setting new values
+    accuracy_gauge.clear()
+    precision_gauge.clear()
+    f1_gauge.clear()
+    recall_gauge.clear()
+
     try:
         for _, run in runs.iterrows():  # type: ignore
             if run.get("tags.model_name") == settings.MODEL_NAME:
-                run_id = run.get("run_id", "Default")
-                model_name = run.get("tags.model_name", 0)
-                accuracy = run.get("metrics.accuracy", 0)
-                precision = run.get("metrics.precision", 0)
-                f1_score = run.get("metrics.f1", 0)
-                recall = run.get("metrics.recall", 0)
+                if counter < 4:
+                    run_id = run.get("run_id", "Default")
+                    model_name = run.get("tags.model_name", 0)
+                    accuracy = run.get("metrics.accuracy", 0)
+                    precision = run.get("metrics.precision", 0)
+                    f1_score = run.get("metrics.f1", 0)
+                    recall = run.get("metrics.recall", 0)
 
-                accuracy_gauge.labels(model_name=model_name).set(accuracy) 
-                precision_gauge.labels(model_name=model_name).set(precision) 
-                f1_gauge.labels(model_name=model_name).set(f1_score)
-                recall_gauge.labels(model_name=model_name).set(recall)
+                    accuracy_gauge.labels(pos= counter+1, model_name=model_name).set(accuracy) 
+                    precision_gauge.labels(pos= counter+1, model_name=model_name).set(precision) 
+                    f1_gauge.labels(pos= counter+1, model_name=model_name).set(f1_score)
+                    recall_gauge.labels(pos= counter+1, model_name=model_name).set(recall)
                 counter += 1
-
         model_gauge.set(counter)
     except:
         pass
@@ -100,7 +106,7 @@ def home_route():
     """Welcome message for the API root"""
     return {
         "message": "🎉 Welcome to the Churn Prediction API! "
-                   "Use /predict to get predictions and /train_model to retrain the model."
+        "Use /predict to get predictions and /train_model to retrain the model."
     }
 
 
@@ -150,11 +156,12 @@ async def train_model():
     Updates MLflow metrics and clears Redis.
     """
     try:
-        r = app.state.redis
+        rdx = app.state.redis
+        exp_id = app.state.exp_id
         etl = ETLPipeline()
-
+        
         # Retrieve new training data
-        json_data = await RedisHelper(conn=r).retrieve_data()
+        json_data = await RedisHelper(conn=rdx).retrieve_data()
         new_df = pd.DataFrame(json_data)
         old_df = etl.extract_data()
 
@@ -170,7 +177,7 @@ async def train_model():
         }
 
         # Train and log model
-        modelling = ModelingPipeline((X_train, X_test, y_train, y_test))
+        modelling = ModelingPipeline((X_train, X_test, y_train, y_test), exp_id)
         model = modelling.train_model(params=params)
         modelling.log_to_mlflow(model, settings.MODEL_NAME, params, settings.RUN_NAME)
 
@@ -178,7 +185,7 @@ async def train_model():
         await update_metrics()
 
         # Clear Redis
-        await RedisHelper(conn=r).clear_data()
+        await RedisHelper(conn=rdx).clear_data()
 
         return {"message": "✅ Model retraining and logging complete."}
 
