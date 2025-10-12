@@ -50,11 +50,3 @@ This API is production-ready, modular, and designed for cloud deployment and ent
 - **Containerization (Optional):** Docker  
 
 ---
-
-## Installation
-
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/your-username/customer-retention-api.git
-cd customer-retention-api
