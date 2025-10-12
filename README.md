@@ -1,7 +1,6 @@
 # Customer Retention Using Churn Prediction
 
-<img src="ChatGPT Image Oct 12, 2025, 09_30_49 PM.png">
-
+![Project Diagram](ChatGPT%20Image%20Oct%2012,%202025,%2009_30_49%20PM.png)
 
 **A FastAPI-based microservice for predicting customer churn using trained machine learning models, integrated with Redis, MLflow, Prometheus, and Grafana, deployed on Azure.**
 
@@ -35,7 +34,7 @@ This API is production-ready, modular, and designed for cloud deployment and ent
 - **MLflow Integration:** Track all experiments, metrics, and model versions for reproducibility.  
 - **Prometheus & Grafana Monitoring:** Collect and visualize metrics including accuracy, precision, recall, F1-score, and total deployed models.  
 - **Cloud Deployment on Azure:** Leverage Azure App Services or Container Instances for scalable and reliable hosting.  
-- **Clean, Modular API Structure:** Asynchronous processing, modular design, and maintainable codebase.
+- **Clean, Modular API Structure:** Asynchronous processing, modular design, and maintainable codebase.  
 
 ---
 
@@ -50,3 +49,37 @@ This API is production-ready, modular, and designed for cloud deployment and ent
 - **Containerization (Optional):** Docker  
 
 ---
+
+## Application Workflow
+
+1. **Prediction Endpoint**
+   - Accepts new customer data via REST API (JSON/CSV).  
+   - Performs preprocessing and feature transformation.  
+   - Uses the latest trained Random Forest model to predict churn probability.  
+   - Stores predictions and features in **Redis** for quick access and historical tracking.  
+
+2. **Retraining Endpoint**
+   - Triggered when new customer data accumulates in Redis.  
+   - Loads new data and merges with existing training dataset.  
+   - Performs preprocessing, handles imbalanced classes, and retrains the Random Forest model incrementally.  
+   - Updates MLflow with the new model version and metrics.  
+   - Clears Redis cache to free up space after retraining.  
+
+3. **Monitoring**
+   - Prometheus collects metrics like model accuracy, precision, recall, and F1-score.  
+   - Grafana dashboards visualize these metrics in real-time, ensuring proactive monitoring.  
+
+---
+
+## Example API Endpoints
+
+| Endpoint               | Method | Description |
+|------------------------|--------|-------------|
+| `/predict`             | POST   | Submit new customer data to get churn probability predictions. |
+| `/train`               | POST   | Retrain the model using accumulated new customer data in Redis. |
+| `/metrics`             | GET    | Prometheus metrics endpoint for monitoring. |
+
+---
+
+This setup ensures a **production-ready, scalable, and monitored churn prediction system** capable of both batch and real-time customer retention insights.
+
