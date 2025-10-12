@@ -1,6 +1,6 @@
-import redis.asyncio as redis
 from fastapi import FastAPI, HTTPException, status, Response
 from typing import List
+import redis.asyncio as redis
 
 import pandas as pd
 import mlflow
