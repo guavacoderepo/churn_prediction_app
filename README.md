@@ -1,6 +1,6 @@
 # Customer Retention Using Churn Prediction
 
-<img src="ChatGPT Image Oct 12, 2025, 09_30_49 PM.png>
+<img src="ChatGPT Image Oct 12, 2025, 09_30_49 PM.png">
 
 
 **A FastAPI-based microservice for predicting customer churn using trained machine learning models, integrated with Redis, MLflow, Prometheus, and Grafana, deployed on Azure.**
