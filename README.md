@@ -1,42 +1,48 @@
-# Churn Prediction API
+# Customer Retention Using Churn Prediction
 
-**A FastAPI-based microservice for predicting customer churn using machine learning, integrated with Redis, MLflow, Prometheus, and Grafana, deployed on Azure.**
+<img src="ChatGPT Image Oct 12, 2025, 09_30_49 PM.png>
+
+
+**A FastAPI-based microservice for predicting customer churn using trained machine learning models, integrated with Redis, MLflow, Prometheus, and Grafana, deployed on Azure.**
 
 ---
 
 ## Project Overview
 
-The **Churn Prediction API** is designed to help businesses proactively identify customers at risk of churn using advanced machine learning models. By leveraging historical and real-time customer data, organizations can make data-driven decisions to retain valuable customers, optimize revenue, and improve overall customer satisfaction.  
+The **Customer Retention API** leverages machine learning to help businesses identify customers at risk of churn, enabling proactive retention strategies. Using a **Random Forest Classifier (RFC)**, the system predicts churn probabilities based on historical customer data, with data preprocessing and imbalance handling incorporated for optimal model performance.  
 
 Key capabilities include:
 
+- **Data preprocessing:** Cleaning, feature engineering, and transformation of raw customer data.  
+- **Handling imbalanced datasets:** Resampling techniques applied to ensure model fairness and accuracy.  
 - **Batch and real-time predictions** via RESTful API endpoints.  
 - **Incremental model retraining** to continuously improve prediction accuracy using new data.  
-- **Redis integration** for storing predictions and customer data for fast retrieval and historical analysis.  
-- **MLflow integration** for tracking experiments, managing model versions, and logging metrics.  
-- **Prometheus and Grafana monitoring** for real-time performance visualization and alerting.  
-- **Deployment on Azure** ensures high availability, scalability, and easy integration with enterprise systems.  
+- **Redis integration** for storing predictions and historical data.  
+- **MLflow integration** for experiment tracking, model versioning, and metrics logging.  
+- **Prometheus and Grafana monitoring** for real-time performance visualization.  
+- **Deployment on Azure** ensures high availability and scalability.  
 
-This API is modular, maintainable, and production-ready, making it ideal for cloud deployment and integration with other services.
+This API is production-ready, modular, and designed for cloud deployment and enterprise integration.
 
 ---
 
 ## Key Features
 
-- **Batch Prediction:** Accept customer datasets in CSV or JSON format and return churn probability predictions.  
-- **Incremental Retraining:** Incorporate new customer data into existing models without retraining from scratch, improving model performance over time.  
+- **Batch Prediction:** Submit customer datasets (CSV or JSON) to receive churn probability predictions.  
+- **Random Forest Classifier (RFC):** Trained on preprocessed data with resampling to handle class imbalance.  
+- **Incremental Retraining:** Update models with new customer data without retraining from scratch.  
 - **Redis Integration:** Cache predictions and features for fast access and historical analysis.  
-- **MLflow Integration:** Track all model experiments, metrics, and versions for reproducibility and easy rollback.  
-- **Prometheus & Grafana Monitoring:** Collect and visualize key metrics including accuracy, precision, recall, F1-score, and the number of deployed models.  
-- **Cloud Deployment on Azure:** Leverage Azure App Services or Azure Container Instances for scalable, reliable hosting.  
-- **Clean and Scalable API Structure:** Follows best practices for FastAPI applications with asynchronous processing, modularity, and extensibility.  
+- **MLflow Integration:** Track all experiments, metrics, and model versions for reproducibility.  
+- **Prometheus & Grafana Monitoring:** Collect and visualize metrics including accuracy, precision, recall, F1-score, and total deployed models.  
+- **Cloud Deployment on Azure:** Leverage Azure App Services or Container Instances for scalable and reliable hosting.  
+- **Clean, Modular API Structure:** Asynchronous processing, modular design, and maintainable codebase.
 
 ---
 
 ## Tech Stack
 
 - **Backend:** Python, FastAPI  
-- **Machine Learning:** Scikit-learn, Pandas  
+- **Machine Learning:** Scikit-learn (Random Forest Classifier), Pandas  
 - **Database / Cache:** Redis (`redis.asyncio`)  
 - **Model Management:** MLflow  
 - **Monitoring & Dashboard:** Prometheus, Grafana  
@@ -50,5 +56,5 @@ This API is modular, maintainable, and production-ready, making it ideal for clo
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/your-username/churn-prediction-api.git
-cd churn-prediction-api
+git clone https://github.com/your-username/customer-retention-api.git
+cd customer-retention-api
