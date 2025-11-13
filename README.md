@@ -22,7 +22,7 @@ Key capabilities include:
 - **Deployment on Azure** ensures high availability and scalability.  
 
 This API is production-ready, modular, and designed for cloud deployment and enterprise integration.
-
+ 
 ---
 
 ## Key Features
